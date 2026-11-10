@@ -27,3 +27,30 @@ jobs:
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Re-publishes the same binaries goreleaser just built under a
+      # second, rolling "latest" tag/release (force-moved to this commit),
+      # marked as a prerelease so it never competes with the real semver
+      # tag for GitHub's own "Latest" badge -- same convention as
+      # py-sanityctl. No second build: this only re-uploads what's
+      # already in dist/.
+      - name: Move latest tag to this release
+        run: |
+          git tag -f latest
+          git push origin refs/tags/latest --force
+
+      - name: Create or update rolling latest release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if gh release view latest >/dev/null 2>&1; then
+            gh release edit latest \
+              --title "latest" \
+              --notes "Rolling prerelease built from main. For stable consumption use semver tags."
+          else
+            gh release create latest \
+              --prerelease \
+              --title "latest" \
+              --notes "Rolling prerelease built from main. For stable consumption use semver tags."
+          fi
+          gh release upload latest dist/*.tar.gz dist/*.zip dist/checksums.txt --clobber
