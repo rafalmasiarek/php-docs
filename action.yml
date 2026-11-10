@@ -1,0 +1,29 @@
+name: 'php-docs'
+description: 'Generate Markdown API documentation for a PHP library from composer.json + source'
+author: 'rafalmasiarek'
+
+inputs:
+  lib-dir:
+    description: 'Path to the PHP library root (containing composer.json), relative to the repo checkout'
+    required: false
+    default: '.'
+  no-header:
+    description: 'Skip the name/description/license header derived from composer.json'
+    required: false
+    default: 'false'
+  output-file:
+    description: 'File to write the generated Markdown to, relative to the repo checkout. Empty prints to the step log only'
+    required: false
+    default: ''
+
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+  args:
+    - '--no-header=${{ inputs.no-header }}'
+    - '--out=${{ inputs.output-file }}'
+    - '${{ inputs.lib-dir }}'
+
+branding:
+  icon: 'file-text'
+  color: 'purple'

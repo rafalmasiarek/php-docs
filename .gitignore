@@ -1,0 +1,4 @@
+/php-docs
+/dist/
+/bin/
+*.test
