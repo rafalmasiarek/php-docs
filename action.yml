@@ -15,6 +15,18 @@ inputs:
     description: 'File to write the generated Markdown to, relative to the repo checkout. Empty prints to the step log only'
     required: false
     default: ''
+  output-mode:
+    description: 'How to write output-file: "replace" overwrites it entirely, "inject" updates only the content between <!-- BEGIN_PHP_DOCS --> and <!-- END_PHP_DOCS --> markers, seeding the file from a minimal template if it does not exist yet'
+    required: false
+    default: 'replace'
+  repo-url:
+    description: 'Repo URL (e.g. https://github.com/owner/repo) -- when set, adds a source link with file+line next to every class and method; omitted entirely when this input is empty'
+    required: false
+    default: ''
+  ref:
+    description: 'Branch or tag to link to in repo-url source links'
+    required: false
+    default: 'main'
 
 runs:
   using: 'docker'
@@ -22,6 +34,9 @@ runs:
   args:
     - '--no-header=${{ inputs.no-header }}'
     - '--out=${{ inputs.output-file }}'
+    - '--output-mode=${{ inputs.output-mode }}'
+    - '--repo-url=${{ inputs.repo-url }}'
+    - '--ref=${{ inputs.ref }}'
     - '${{ inputs.lib-dir }}'
 
 branding:
