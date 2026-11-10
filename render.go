@@ -158,7 +158,18 @@ func computeAnchors(classes []ClassLike) (classAnchor map[string]string, methodA
 	for _, cl := range classes {
 		classAnchor[fqcn(cl)] = slugger.Slug(cl.Name)
 		for _, m := range cl.Methods {
-			methodAnchor[fqcn(cl)+"::"+m.Name] = slugger.Slug(m.Name + "()")
+			// "ClassName method()" rather than bare "method()" -- self-
+			// descriptive anchors (dkimsigner-sign) instead of opaque ones
+			// (sign-3) when the same method name recurs across classes
+			// (e.g. ten different middlewares each with process()). A
+			// space, not "::", is what GitHub's slugger actually turns
+			// into the separating "-": punctuation like ":" is stripped
+			// outright with nothing in its place, which would otherwise
+			// collapse this into the unreadable "dkimsignersign". The
+			// sequential counter below still applies on top as a fallback
+			// for the one case a space doesn't fully resolve: two classes
+			// sharing the same bare Name in different namespaces.
+			methodAnchor[fqcn(cl)+"::"+m.Name] = slugger.Slug(cl.Name + " " + m.Name + "()")
 		}
 	}
 	return classAnchor, methodAnchor
@@ -472,7 +483,7 @@ func Render(classes []ClassLike, repoURL, ref string) string {
 			b.WriteString("\n")
 
 			for _, m := range cl.Methods {
-				renderMethodDetail(&b, m, links, sourceLink(repoURL, ref, cl.FilePath, m.Line))
+				renderMethodDetail(&b, cl.Name, m, links, sourceLink(repoURL, ref, cl.FilePath, m.Line))
 			}
 		}
 	}
@@ -480,7 +491,7 @@ func Render(classes []ClassLike, repoURL, ref string) string {
 	return b.String()
 }
 
-func renderMethodDetail(b *strings.Builder, m Method, links map[string]string, srcLink string) {
+func renderMethodDetail(b *strings.Builder, className string, m Method, links map[string]string, srcLink string) {
 	// Collapsed by default: a class with a dozen-plus methods would
 	// otherwise turn the whole document into a wall of h4 headings. The
 	// heading still lives inside -- GitHub parses markdown normally
@@ -495,7 +506,8 @@ func renderMethodDetail(b *strings.Builder, m Method, links map[string]string, s
 	// pure restatement.
 	fmt.Fprintf(b, "<details>\n<summary><code>%s()</code></summary>\n\n", htmlEscape(m.Name))
 
-	fmt.Fprintf(b, "#### `%s()`\n\n", m.Name)
+	// A space, not "::" -- see the matching comment in computeAnchors().
+	fmt.Fprintf(b, "#### `%s %s()`\n\n", className, m.Name)
 
 	if srcLink != "" {
 		fmt.Fprintf(b, "%s\n\n", srcLink)
