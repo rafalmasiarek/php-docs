@@ -1,0 +1,11 @@
+name: php-docs
+repo_url: https://github.com/rafalmasiarek/php-docs
+license: MIT
+
+context:
+  - "Generates Markdown API documentation for a PHP library from composer.json + source, GitHub-anchor-accurate, with GitHub Action and release binaries"
+
+authors:
+  - name: Rafał Masiarek
+    github: rafalmasiarek
+    website: https://masiarek.pl
