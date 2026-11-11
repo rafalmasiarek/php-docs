@@ -1,0 +1,16 @@
+name: readme
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "README.yml"
+
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  generate-readme:
+    uses: rafalmasiarek/readme-gen/.github/workflows/generate-readme.yml@main

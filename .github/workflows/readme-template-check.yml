@@ -1,0 +1,14 @@
+name: readme-template-check
+
+on:
+  workflow_dispatch:
+
+  schedule:
+    - cron: "0 3 * * 1"
+
+permissions:
+  contents: write
+
+jobs:
+  check-template-update:
+    uses: rafalmasiarek/readme-gen/.github/workflows/check-template-update.yml@main
