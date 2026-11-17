@@ -229,7 +229,8 @@ func ParseDocBlock(raw string) DocBlock {
 	doc := DocBlock{}
 	lines := strings.Split(raw, "\n")
 
-	var summaryLines []string
+	var summaryParagraphs []string
+	var currentParagraph []string
 	type rawTag struct {
 		name string
 		text string
@@ -261,12 +262,22 @@ func ParseDocBlock(raw string) DocBlock {
 			continue
 		}
 
-		if l != "" {
-			summaryLines = append(summaryLines, l)
+		if l == "" {
+			if len(currentParagraph) > 0 {
+				summaryParagraphs = append(summaryParagraphs, strings.Join(currentParagraph, " "))
+				currentParagraph = nil
+			}
+			continue
 		}
+
+		currentParagraph = append(currentParagraph, l)
 	}
 
-	doc.Summary = strings.Join(summaryLines, " ")
+	if len(currentParagraph) > 0 {
+		summaryParagraphs = append(summaryParagraphs, strings.Join(currentParagraph, " "))
+	}
+
+	doc.Summary = strings.Join(summaryParagraphs, "\n\n")
 
 	for _, t := range tags {
 		switch t.name {
