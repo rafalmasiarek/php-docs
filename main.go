@@ -106,6 +106,13 @@ func main() {
 		}
 	}
 
+	if dir := filepath.Dir(*out); dir != "." {
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			fmt.Fprintf(os.Stderr, "error creating directory %s: %v\n", dir, err)
+			os.Exit(1)
+		}
+	}
+
 	if err := os.WriteFile(*out, []byte(finalContent), 0o644); err != nil {
 		fmt.Fprintf(os.Stderr, "error writing %s: %v\n", *out, err)
 		os.Exit(1)
