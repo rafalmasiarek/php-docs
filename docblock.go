@@ -225,12 +225,49 @@ func parsePropertyTag(mode, text string) MagicProperty {
 	return MagicProperty{Mode: mode, Name: name, Type: typ, Description: strings.TrimSpace(rest)}
 }
 
+// summaryLine is one line of a docblock summary/description paragraph,
+// paired with its indentation (the number of spaces following the "*")
+// so joinSummaryLines can tell a line that's indented *relative to its own
+// paragraph* -- typically a code example after a "Label:" line -- from a
+// normally wrapped prose line.
+type summaryLine struct {
+	text   string
+	indent int
+}
+
+// joinSummaryLines joins one paragraph's lines into a single string. A line
+// indented more than the paragraph's first line gets a hard line break
+// before it instead of being folded into the prose with a space, so a
+// docblock author's "Label:\n  example();" layout survives into the
+// rendered Markdown as two lines instead of one run-on sentence.
+func joinSummaryLines(ls []summaryLine) string {
+	if len(ls) == 0 {
+		return ""
+	}
+
+	baseIndent := ls[0].indent
+
+	var b strings.Builder
+	b.WriteString(ls[0].text)
+
+	for _, line := range ls[1:] {
+		if line.indent > baseIndent {
+			b.WriteString("  \n")
+		} else {
+			b.WriteString(" ")
+		}
+		b.WriteString(line.text)
+	}
+
+	return b.String()
+}
+
 func ParseDocBlock(raw string) DocBlock {
 	doc := DocBlock{}
 	lines := strings.Split(raw, "\n")
 
 	var summaryParagraphs []string
-	var currentParagraph []string
+	var currentParagraph []summaryLine
 	type rawTag struct {
 		name string
 		text string
@@ -239,9 +276,10 @@ func ParseDocBlock(raw string) DocBlock {
 	var current *rawTag
 
 	for _, line := range lines {
-		l := strings.TrimSpace(line)
-		l = strings.TrimPrefix(l, "*")
-		l = strings.TrimSpace(l)
+		afterStar := strings.TrimLeft(line, " \t")
+		afterStar = strings.TrimPrefix(afterStar, "*")
+		indent := len(afterStar) - len(strings.TrimLeft(afterStar, " \t"))
+		l := strings.TrimSpace(afterStar)
 
 		if strings.HasPrefix(l, "@") {
 			parts := strings.SplitN(l, " ", 2)
@@ -264,17 +302,17 @@ func ParseDocBlock(raw string) DocBlock {
 
 		if l == "" {
 			if len(currentParagraph) > 0 {
-				summaryParagraphs = append(summaryParagraphs, strings.Join(currentParagraph, " "))
+				summaryParagraphs = append(summaryParagraphs, joinSummaryLines(currentParagraph))
 				currentParagraph = nil
 			}
 			continue
 		}
 
-		currentParagraph = append(currentParagraph, l)
+		currentParagraph = append(currentParagraph, summaryLine{text: l, indent: indent})
 	}
 
 	if len(currentParagraph) > 0 {
-		summaryParagraphs = append(summaryParagraphs, strings.Join(currentParagraph, " "))
+		summaryParagraphs = append(summaryParagraphs, joinSummaryLines(currentParagraph))
 	}
 
 	doc.Summary = strings.Join(summaryParagraphs, "\n\n")
